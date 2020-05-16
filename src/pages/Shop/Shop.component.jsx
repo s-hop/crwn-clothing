@@ -2,9 +2,6 @@ import React from 'react';
 import { Route } from 'react-router-dom';
 import { connect } from 'react-redux';
 
-import CollectionsOverview from '../../components/CollectionsOverview/CollectionsOverview.component';
-import CollectionPage from '../Collection/Collection.component';
-
 import { updateCollections } from '../../redux/shop/shop.actions';
 
 import {
@@ -12,7 +9,19 @@ import {
   convertCollectionsSnapshotToMap
 } from '../../firebase/firebase.utils';
 
+import withSpinner from '../../components/withSpinner/withSpinner.component';
+
+import CollectionsOverview from '../../components/CollectionsOverview/CollectionsOverview.component';
+import CollectionPage from '../Collection/Collection.component';
+
+const CollectionsOverviewWithSpinner = withSpinner(CollectionsOverview);
+const CollectionPageWithSpinner = withSpinner(CollectionPage);
+
 class ShopPage extends React.Component {
+  state = {
+    loading: true
+  };
+
   unsubscribeFromSnapshot = null;
 
   componentDidMount() {
@@ -22,15 +31,29 @@ class ShopPage extends React.Component {
     this.unsubscribeFromSnapshot = collectionRef.onSnapshot(async snapshot => {
       const collectionsMap = convertCollectionsSnapshotToMap(snapshot);
       updateCollections(collectionsMap);
+      this.setState({ loading: false });
     });
   }
 
   render() {
     const { match } = this.props;
+    const { loading } = this.state;
+
     return (
       <div className="shop-page">
-        <Route exact path={`${match.path}`} component={CollectionsOverview} />
-        <Route path={`${match.path}/:categoryId`} component={CollectionPage} />
+        <Route
+          exact
+          path={`${match.path}`}
+          render={props => (
+            <CollectionsOverviewWithSpinner isLoading={loading} {...props} />
+          )}
+        />
+        <Route
+          path={`${match.path}/:categoryId`}
+          render={props => (
+            <CollectionPageWithSpinner isLoading={loading} {...props} />
+          )}
+        />
       </div>
     );
   }
